@@ -1,0 +1,22 @@
+:root { --bg:#f1faf4; --fg:#1b2a21; --accent:#0f9d58; --card:#fff; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#0b1a12; --fg:#e4f4ea; --accent:#3ddc84; --card:#13261b; }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+header { background: var(--accent); color: #fff; padding: 1.5rem 1rem; text-align: center; border-radius: 0 0 24px 24px; }
+h1 { margin: 0; font-size: 1.6rem; letter-spacing: .5px; }
+main { padding: 1rem; max-width: 40rem; margin: 0 auto; }
+ul { list-style: none; padding: 0; }
+li { background: var(--card); padding: 1rem; margin-bottom: .6rem; border-radius: 16px; border-left: 6px solid var(--accent); }
+button {
+  width: 100%; min-height: 52px; font-size: 1.15rem; border: 0; border-radius: 26px;
+  background: var(--accent); color: #fff;
+}
+button:active { opacity: .8; }

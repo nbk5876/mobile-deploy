@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1f6feb">
+  <title>App 2</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1 id="title">Loading…</h1>
+  </header>
+  <main>
+    <p id="message"></p>
+    <ul id="items"></ul>
+    <button id="tap" type="button">Tap me</button>
+    <p id="count" aria-live="polite"></p>
+  </main>
+  <script>
+    fetch('data.json')
+      .then(r => r.json())
+      .then(d => {
+        document.getElementById('title').textContent = d.title;
+        document.title = d.title;
+        document.getElementById('message').textContent = d.message;
+        const ul = document.getElementById('items');
+        d.items.forEach(t => {
+          const li = document.createElement('li');
+          li.textContent = t;
+          ul.appendChild(li);
+        });
+      })
+      .catch(() => {
+        document.getElementById('title').textContent = 'App 2';
+        document.getElementById('message').textContent = 'Could not load data.json';
+      });
+    let n = 0;
+    document.getElementById('tap').addEventListener('click', () => {
+      n++;
+      document.getElementById('count').textContent = 'Taps: ' + n;
+    });
+  </script>
+</body>
+</html>
