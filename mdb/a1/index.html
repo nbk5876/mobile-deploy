@@ -14,6 +14,10 @@
     <h1 id="title">Loading…</h1>
   </header>
   <main>
+    <section class="motw" aria-label="Message of the day">
+      <h2>Message of the day</h2>
+      <img id="motw" alt="">
+    </section>
     <p id="message"></p>
     <ul id="items"></ul>
     <button id="tap" type="button">Tap me</button>
@@ -26,6 +30,13 @@
         document.getElementById('title').textContent = d.title;
         document.title = d.title;
         document.getElementById('message').textContent = d.message;
+        // Show today's image. Add ?day=0..6 (0 = Sunday) to preview another day.
+        const q = parseInt(new URLSearchParams(location.search).get('day'), 10);
+        const day = q >= 0 && q <= 6 ? q : new Date().getDay();
+        const w = (d.weekly || [])[day];
+        const img = document.getElementById('motw');
+        if (w) { img.src = w.image; img.alt = w.alt; }
+        else { img.closest('section').hidden = true; }
         const ul = document.getElementById('items');
         d.items.forEach(t => {
           const li = document.createElement('li');

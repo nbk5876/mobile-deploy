@@ -1,5 +1,48 @@
 {
   "title": "App 1",
   "message": "Deploy test v3: updated Nov 15, 2026 (second end-to-end run).",
-  "items": ["Built in Claude chat", "Stored in GitHub", "Deployed to core3.com/mdb/a1", "Edited and redeployed by Claude", "Round-trip test #2 passed"]
+  "items": [
+    "Built in Claude chat",
+    "Stored in GitHub",
+    "Deployed to core3.com/mdb/a1",
+    "Edited and redeployed by Claude",
+    "Round-trip test #2 passed"
+  ],
+  "weekly": [
+    {
+      "day": "Sunday",
+      "image": "weekly/sun.jpg",
+      "alt": "Oh, so nobody told the cat"
+    },
+    {
+      "day": "Monday",
+      "image": "weekly/mon.jpg",
+      "alt": "I used to chase mice. Now I have people for that"
+    },
+    {
+      "day": "Tuesday",
+      "image": "weekly/tue.jpg",
+      "alt": "This isn't what it looks like"
+    },
+    {
+      "day": "Wednesday",
+      "image": "weekly/wed.jpg",
+      "alt": "The zen of it all"
+    },
+    {
+      "day": "Thursday",
+      "image": "weekly/thu.jpg",
+      "alt": "You realize I've been recording everything, right?"
+    },
+    {
+      "day": "Friday",
+      "image": "weekly/fri.jpg",
+      "alt": "The Zen of it all"
+    },
+    {
+      "day": "Saturday",
+      "image": "weekly/sat.jpg",
+      "alt": "I've been thinking. You need more supervision"
+    }
+  ]
 }
