@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#1f6feb">
   <title>App 1</title>
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
   <img class="banner" src="banner.svg" alt="Coffee cups on a café table">
@@ -19,7 +19,6 @@
       <img id="motw" alt="" style="display:block;width:100%;max-width:100%;height:auto">
     </section>
     <p id="message"></p>
-    <ul id="items"></ul>
     <button id="tap" type="button">Tap me</button>
     <p id="count" aria-live="polite"></p>
   </main>
@@ -40,12 +39,6 @@
         idx = day % (weekly.length || 1);
         if (weekly.length) showPhoto();
         else img.closest('section').hidden = true;
-        const ul = document.getElementById('items');
-        d.items.forEach(t => {
-          const li = document.createElement('li');
-          li.textContent = t;
-          ul.appendChild(li);
-        });
       })
       .catch(() => {
         document.getElementById('title').textContent = 'App 1';
