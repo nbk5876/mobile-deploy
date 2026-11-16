@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#1f6feb">
   <title>App 1</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
   <img class="banner" src="banner.svg" alt="Coffee cups on a café table">
@@ -16,7 +16,7 @@
   <main>
     <section class="motw" aria-label="Message of the day">
       <h2>Message of the day</h2>
-      <img id="motw" alt="">
+      <img id="motw" alt="" style="display:block;width:100%;max-width:100%;height:auto">
     </section>
     <p id="message"></p>
     <ul id="items"></ul>
@@ -24,7 +24,7 @@
     <p id="count" aria-live="polite"></p>
   </main>
   <script>
-    fetch('data.json')
+    fetch("data.json?v=" + Date.now())
       .then(r => r.json())
       .then(d => {
         document.getElementById('title').textContent = d.title;
