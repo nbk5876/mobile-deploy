@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#1f6feb">
   <title>App 1</title>
-  <link rel="stylesheet" href="style.css?v=2">
+  <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
   <img class="banner" src="banner.svg" alt="Coffee cups on a café table">
@@ -24,6 +24,9 @@
     <p id="count" aria-live="polite"></p>
   </main>
   <script>
+    const img = document.getElementById('motw');
+    let weekly = [], idx = 0;
+    function showPhoto() { img.src = weekly[idx].image; img.alt = weekly[idx].alt; }
     fetch("data.json?v=" + Date.now())
       .then(r => r.json())
       .then(d => {
@@ -33,10 +36,10 @@
         // Show today's image. Add ?day=0..6 (0 = Sunday) to preview another day.
         const q = parseInt(new URLSearchParams(location.search).get('day'), 10);
         const day = q >= 0 && q <= 6 ? q : new Date().getDay();
-        const w = (d.weekly || [])[day];
-        const img = document.getElementById('motw');
-        if (w) { img.src = w.image; img.alt = w.alt; }
-        else { img.closest('section').hidden = true; }
+        weekly = d.weekly || [];
+        idx = day % (weekly.length || 1);
+        if (weekly.length) showPhoto();
+        else img.closest('section').hidden = true;
         const ul = document.getElementById('items');
         d.items.forEach(t => {
           const li = document.createElement('li');
@@ -52,6 +55,7 @@
     document.getElementById('tap').addEventListener('click', () => {
       n++;
       document.getElementById('count').textContent = 'Taps: ' + n;
+      if (weekly.length) { idx = (idx + 1) % weekly.length; showPhoto(); }
     });
   </script>
 </body>
