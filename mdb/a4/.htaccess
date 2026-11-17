@@ -1,0 +1,6 @@
+# Always revalidate the page, styles and data so edits show up right after a deploy
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|css|json)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>
