@@ -47,9 +47,8 @@
         document.getElementById('title').textContent = d.title;
         document.title = d.title;
         document.getElementById('message').textContent = d.message;
-        // Show today's image. Add ?day=0..6 (0 = Sunday) to preview another day.
-        const q = parseInt(new URLSearchParams(location.search).get('day'), 10);
-        const day = q >= 0 && q <= 6 ? q : new Date().getDay();
+        // Always start on the first image. Add ?start=N to begin on image N instead.
+        const q = parseInt(new URLSearchParams(location.search).get('start'), 10);
         if (d.featured) {
           const f = d.featured;
           document.getElementById('featimg').src = f.image;
@@ -58,7 +57,7 @@
           document.getElementById('featured').hidden = false;
         }
         weekly = d.weekly || [];
-        idx = day % (weekly.length || 1);
+        idx = q >= 0 ? q % (weekly.length || 1) : 0;
         if (weekly.length) showPhoto();
         else img.closest('section').hidden = true;
       })

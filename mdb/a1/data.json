@@ -10,6 +10,11 @@
   ],
   "weekly": [
     {
+      "day": "Intro",
+      "image": "weekly/iphone.jpg",
+      "alt": "Is this an iPhone 17?"
+    },
+    {
       "day": "Sunday",
       "image": "weekly/sun.jpg",
       "alt": "Oh, so nobody told the cat"
