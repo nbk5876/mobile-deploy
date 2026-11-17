@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#1f6feb">
   <title>App 1</title>
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
   <img class="banner" src="banner.svg" alt="Coffee cups on a café table">
@@ -14,10 +14,16 @@
     <h1 id="title">Loading…</h1>
   </header>
   <main>
+    <div class="card">
+    <section class="featured" id="featured" aria-label="Featured" hidden>
+      <img id="featimg" alt="">
+      <h2 id="featname"></h2>
+    </section>
     <section class="motw" aria-label="Message of the day">
       <h2>Message of the day</h2>
       <img id="motw" alt="" style="display:block;width:100%;max-width:100%;height:auto">
     </section>
+    </div>
     <p id="message"></p>
     <button id="tap" type="button">Tap me</button>
     <p id="count" aria-live="polite"></p>
@@ -35,6 +41,13 @@
         // Show today's image. Add ?day=0..6 (0 = Sunday) to preview another day.
         const q = parseInt(new URLSearchParams(location.search).get('day'), 10);
         const day = q >= 0 && q <= 6 ? q : new Date().getDay();
+        if (d.featured) {
+          const f = d.featured;
+          document.getElementById('featimg').src = f.image;
+          document.getElementById('featimg').alt = f.alt || f.name;
+          document.getElementById('featname').textContent = f.name;
+          document.getElementById('featured').hidden = false;
+        }
         weekly = d.weekly || [];
         idx = day % (weekly.length || 1);
         if (weekly.length) showPhoto();
