@@ -131,6 +131,8 @@ textarea{min-height:80px;resize:vertical}
 .mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
 .field.flag input,.field.flag select,.field.flag textarea{border-color:var(--warn);box-shadow:0 0 0 2px var(--warnbg)}
 .field.flag>label::after{content:' · check this';color:var(--warn);font-weight:700}
+.checkrow{display:flex;gap:12px;align-items:flex-start;margin:0 0 14px;font-weight:400;font-size:16px}
+.checkrow input{width:26px;height:26px;min-height:0;flex:none;margin:2px 0 0;padding:0}
 .vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none}
 @media (prefers-reduced-motion:reduce){.bar>i{transition:none}}
 </style>
@@ -179,7 +181,7 @@ function normalize(s){
     return {id:m.id||uid(),name:m.name||'Unnamed',strength:m.strength||'',unit:m.unit||'tablet',
       perDose:+m.perDose>0?+m.perDose:1,times:Array.isArray(m.times)&&m.times.length?m.times:['08:00'],
       qty:+m.qty>=0?+m.qty:0,fillQty:+m.fillQty>0?+m.fillQty:(+m.qty||1),refills:+m.refills>=0?+m.refills:0,
-      pharmacy:m.pharmacy||'',prescriber:m.prescriber||'',directions:m.directions||'',notes:m.notes||'',example:!!m.example};
+      pharmacy:m.pharmacy||'',prescriber:m.prescriber||'',directions:m.directions||'',notes:m.notes||'',active:m.active!==false,example:!!m.example};
   });
   return s;
 }
@@ -213,6 +215,7 @@ function seed(){return {meds:[],log:{}};}
 function perDay(m){return m.perDose*m.times.length;}
 function daysLeft(m){var p=perDay(m);return p>0?Math.floor(m.qty/p):Infinity;}
 function supplyStatus(m){
+  if(m.active===false)return 'spare';
   if(m.qty<=0)return 'out';
   var d=daysLeft(m);
   return d<=3?'bad':(d<=7?'low':'good');
@@ -250,7 +253,7 @@ function viewToday(){
   var k=dayKey(),log=state.log[k]||{},now=new Date();
   var nowT=pad(now.getHours())+':'+pad(now.getMinutes());
   var doses=[];
-  state.meds.forEach(function(m){m.times.forEach(function(t){doses.push({m:m,t:t,key:m.id+'|'+t});});});
+  state.meds.forEach(function(m){if(m.active===false)return;m.times.forEach(function(t){doses.push({m:m,t:t,key:m.id+'|'+t});});});
   doses.sort(function(a,b){return a.t.localeCompare(b.t)||a.m.name.localeCompare(b.m.name);});
   var taken=doses.filter(function(d){return log[d.key];}).length;
   var pct=doses.length?Math.round(taken/doses.length*100):0;
@@ -261,7 +264,7 @@ function viewToday(){
   if(state.meds.length&&!cloud.doc&&(!state.lastBackup||Date.now()-state.lastBackup>14*864e5))h+='<div class="alert warn" style="margin-bottom:10px"><span>'+(state.lastBackup?'Your last backup file is over 2 weeks old.':'You have not saved a backup file yet.')+'</span><button data-tab="backup">Back up</button></div>';
   h+='<div class="card summary"><div class="big num">'+taken+' of '+doses.length+' '+plural(doses.length,'dose')+' taken</div>'+
      '<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct+'"><i style="width:'+pct+'%"></i></div></div>';
-  var low=state.meds.filter(function(m){return supplyStatus(m)!=='good';});
+  var low=state.meds.filter(function(m){var st=supplyStatus(m);return st!=='good'&&st!=='spare';});
   if(low.length){
     h+='<h2>Supply</h2><div class="stack">';
     low.forEach(function(m){
@@ -291,15 +294,33 @@ function viewToday(){
   return h;
 }
 
+function totalsHtml(){
+  var g={};
+  state.meds.forEach(function(m){var k=(m.name+'|'+m.strength).toLowerCase();(g[k]=g[k]||[]).push(m);});
+  var rows=Object.keys(g).map(function(k){return g[k];}).filter(function(a){return a.length>1;});
+  if(!rows.length)return '';
+  var h='<h2>Same medication, several bottles</h2><div class="stack">';
+  rows.forEach(function(a){
+    var total=0,perDayActive=0;
+    a.forEach(function(m){total+=m.qty;if(m.active!==false)perDayActive+=perDay(m);});
+    total=round2(total);
+    var unit=a[0].unit+(total===1?'':'s');
+    var line=perDayActive>0?'About '+Math.floor(total/perDayActive)+' days at your daily use.':'None of these bottles are on your daily plan.';
+    h+='<div class="card small"><div class="nm">'+esc(a[0].name)+(a[0].strength?' '+esc(a[0].strength):'')+'</div>'+
+       '<div class="num">'+total+' '+esc(unit)+' on hand across '+a.length+' bottles. '+line+'</div></div>';
+  });
+  return h+'</div>';
+}
 function viewMeds(){
   var h='';
   if(photo.ready)h+='<div class="stack" style="margin-top:14px"><button class="btn primary block" data-act="import-photos">Import from photos</button>'+
     '<div class="small muted">Pick 2 to 3 photos of one bottle from your camera roll. Photos are read, then discarded. Only the text you confirm is saved.</div></div>';
   if(!state.meds.length)h+='<div class="empty">No medications yet.'+(photo.ready?' Import a bottle from photos or tap Add.':' Tap Add to enter your first one.')+'</div>';
+  h+=totalsHtml();
   h+='<div class="stack" style="margin-top:14px">';
   state.meds.forEach(function(m){
     var s=supplyStatus(m),d=daysLeft(m),pct=Math.max(0,Math.min(100,Math.round(m.qty/m.fillQty*100)));
-    var chip=s==='out'?'<span class="chip out">Out</span>':(s==='good'?'<span class="chip good num">'+d+' days left</span>':'<span class="chip low num">'+d+' '+plural(d,'day')+' left</span>');
+    var chip=s==='spare'?'<span class="chip ex">Spare</span>':s==='out'?'<span class="chip out">Out</span>':(s==='good'?'<span class="chip good num">'+d+' days left</span>':'<span class="chip low num">'+d+' '+plural(d,'day')+' left</span>');
     h+='<div class="card med"><div class="top"><div class="grow"><div class="nm">'+esc(m.name)+(m.strength?' <span class="muted" style="font-weight:600">'+esc(m.strength)+'</span>':'')+'</div>'+
        (m.directions?'<div class="small muted">'+esc(m.directions)+'</div>':'')+'</div>'+
        (m.example?'<span class="chip ex">Example</span>':'')+chip+'</div>'+
@@ -311,7 +332,8 @@ function viewMeds(){
        (m.prescriber?'<span>Prescriber: '+esc(m.prescriber)+'</span>':'')+'</div>'+
        (m.notes?'<div class="small">'+esc(m.notes)+'</div>':'')+
        '<div class="btns"><button class="btn" data-act="edit" data-id="'+esc(m.id)+'">Edit</button>'+
-       '<button class="btn" data-act="refill" data-id="'+esc(m.id)+'" '+(m.refills<1?'disabled style="opacity:.5"':'')+'>Refilled</button></div></div>';
+       '<button class="btn" data-act="refill" data-id="'+esc(m.id)+'" '+(m.refills<1?'disabled style="opacity:.5"':'')+'>Refilled</button>'+
+       '<button class="btn" data-act="toggle-active" data-id="'+esc(m.id)+'">'+(m.active===false?'Use daily':'Make spare')+'</button></div></div>';
   });
   h+='</div><div style="height:76px" aria-hidden="true"></div><button class="fab" data-act="add">+ Add medication</button>';
   return h;
@@ -340,7 +362,7 @@ function viewBackup(){
 }
 
 /* ---------- sheet (add / edit) ---------- */
-function blank(){return {id:'',name:'',strength:'',unit:'tablet',perDose:1,times:['08:00'],qty:30,fillQty:30,refills:0,pharmacy:'',prescriber:'',directions:'',notes:'',example:false};}
+function blank(){return {id:'',name:'',strength:'',unit:'tablet',perDose:1,times:['08:00'],qty:30,fillQty:30,refills:0,pharmacy:'',prescriber:'',directions:'',notes:'',active:true,example:false};}
 function openSheet(id){
   var m=id?state.meds.filter(function(x){return x.id===id;})[0]:null;
   editing=m?JSON.parse(JSON.stringify(m)):blank();
@@ -363,6 +385,7 @@ function renderSheet(){
    (e._note?'<div class="alert info" style="margin-bottom:12px"><span>'+esc(e._note)+'</span></div>':'')+
    '<div id="form-err" class="err" hidden></div>'+
    '<div class="field'+fl('name')+'"><label for="f-name">Medication name</label><input id="f-name" value="'+esc(e.name)+'" autocomplete="off"></div>'+
+   '<label class="checkrow" for="f-active"><input type="checkbox" id="f-active"'+(e.active===false?'':' checked')+'><span><b>Taking daily from this bottle</b><br><span class="small muted">Turn off for a spare. Spares stay in your inventory but are not scheduled.</span></span></label>'+
    '<div class="two"><div class="field'+fl('strength')+'"><label for="f-strength">Strength</label><input id="f-strength" value="'+esc(e.strength)+'" placeholder="10 mg" autocomplete="off"></div>'+
    '<div class="field'+fl('unit')+'"><label for="f-unit">Form</label><select id="f-unit">'+['tablet','capsule','mL','drop','patch','puff','unit'].map(function(u){return '<option'+(u===e.unit?' selected':'')+'>'+u+'</option>';}).join('')+'</select></div></div>'+
    '<div class="field'+fl('perDose')+'"><label for="f-per">Amount per dose</label><input id="f-per" type="number" inputmode="decimal" step="0.25" min="0.25" value="'+e.perDose+'"></div>'+
@@ -381,7 +404,7 @@ function renderSheet(){
 }
 function readForm(){
   var g=function(id){return document.getElementById(id).value;};
-  editing.name=g('f-name').trim();editing.strength=g('f-strength').trim();editing.unit=g('f-unit');
+  editing.name=g('f-name').trim();editing.active=document.getElementById('f-active').checked;editing.strength=g('f-strength').trim();editing.unit=g('f-unit');
   editing.perDose=parseFloat(g('f-per'));editing.qty=parseFloat(g('f-qty'));editing.fillQty=parseFloat(g('f-fill'));
   editing.refills=parseInt(g('f-ref'),10);editing.pharmacy=g('f-ph').trim();editing.prescriber=g('f-doc').trim();
   editing.directions=g('f-dir').trim();editing.notes=g('f-notes').trim();
@@ -425,6 +448,7 @@ document.addEventListener('click',function(ev){
   else if(a==='add')openSheet(null);
   else if(a==='edit')openSheet(t.dataset.id);
   else if(a==='refill')refilled(t.dataset.id);
+  else if(a==='toggle-active'){var tm=state.meds.filter(function(x){return x.id===t.dataset.id;})[0];if(tm){tm.active=(tm.active===false);save();render();}}
   else if(a==='import-photos')document.getElementById('photo-input').click();
   else if(a==='cancel-read'){if(photo.ctl)photo.ctl.abort();}
   else if(a==='cancel')closeSheet();
@@ -537,8 +561,10 @@ function openFromPhoto(d,extra){
   if(!m.directions)un.push('directions');
   if(Array.isArray(d.unclear))d.unclear.forEach(function(k){if(FIELDS.indexOf(k)>=0&&un.indexOf(k)<0)un.push(k);});
   var msg='Read from your photos. Fields marked "check this" were unclear or are suggestions. Compare everything with your bottle before saving. Photos are not saved.';
-  var dup=state.meds.some(function(x){return !x.example&&m.name&&x.name.toLowerCase()===m.name.toLowerCase();});
-  if(dup)msg+=' You already have '+m.name+'. Saving adds a second entry.';
+  var same=function(x){return m.name&&x.name.toLowerCase()===m.name.toLowerCase();};
+  var dupActive=state.meds.some(function(x){return same(x)&&x.active!==false&&x.strength.toLowerCase()===m.strength.toLowerCase();});
+  if(dupActive){m.active=false;msg+=' You already take '+m.name+' daily from another bottle, so this one starts as a spare. Turn on "Taking daily" to switch.';}
+  else if(state.meds.some(same))msg+=' You already have '+m.name+' in your inventory. This adds another bottle.';
   if(extra)msg+=' '+extra;
   editing=m;editing._new=true;editing._unclear=un;editing._note=msg;confirmKey=null;
   renderSheet();
@@ -651,7 +677,7 @@ document.getElementById('backup-input').addEventListener('change',async function
   if(!f)return;
   var raw='';
   try{raw=await f.text();}catch(e){}
-  askRestore(raw,'The file '+f.name);
+  askRestore(raw,'The file '+(f.name.length>40?f.name.slice(0,37)+'...':f.name));
 });
 document.addEventListener('toggle',function(ev){
   if(ev.target&&ev.target.tagName==='DETAILS')pasteOpen=ev.target.open;
