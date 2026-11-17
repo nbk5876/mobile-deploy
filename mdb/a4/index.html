@@ -157,7 +157,9 @@ textarea{min-height:80px;resize:vertical}
 <script>
 (function(){
 'use strict';
-var KEY='rxkeep.v1';
+var DEMO=/[?&]demo=1(?:&|$)/.test(location.search);
+var KEY=DEMO?'rxkeep.demo.v1':'rxkeep.v1';
+var demoFailed=false;
 var state=null, tab='today', storageOk=true, editing=null, confirmKey=null, flash='';
 
 /* ---------- helpers ---------- */
@@ -181,12 +183,12 @@ function normalize(s){
     return {id:m.id||uid(),name:m.name||'Unnamed',strength:m.strength||'',unit:m.unit||'tablet',
       perDose:+m.perDose>0?+m.perDose:1,times:Array.isArray(m.times)&&m.times.length?m.times:['08:00'],
       qty:+m.qty>=0?+m.qty:0,fillQty:+m.fillQty>0?+m.fillQty:(+m.qty||1),refills:+m.refills>=0?+m.refills:0,
-      pharmacy:m.pharmacy||'',prescriber:m.prescriber||'',directions:m.directions||'',notes:m.notes||'',active:m.active!==false,example:!!m.example};
+      pharmacy:m.pharmacy||'',prescriber:m.prescriber||'',directions:m.directions||'',notes:m.notes||'',active:m.active!==false,course:!!m.course,example:!!m.example};
   });
   return s;
 }
 var cloud={doc:null,ok:null,busy:false,dirty:false};
-var booting=!!(window.claude&&window.claude.use);
+var booting=!!(window.claude&&window.claude.use)||(DEMO&&!load());
 function save(){
   var keys=Object.keys(state.log).sort();
   while(keys.length>90){delete state.log[keys.shift()];}
@@ -216,6 +218,7 @@ function perDay(m){return m.perDose*m.times.length;}
 function daysLeft(m){var p=perDay(m);return p>0?Math.floor(m.qty/p):Infinity;}
 function supplyStatus(m){
   if(m.active===false)return 'spare';
+  if(m.course)return 'course';
   if(m.qty<=0)return 'out';
   var d=daysLeft(m);
   return d<=3?'bad':(d<=7?'low':'good');
@@ -253,7 +256,7 @@ function viewToday(){
   var k=dayKey(),log=state.log[k]||{},now=new Date();
   var nowT=pad(now.getHours())+':'+pad(now.getMinutes());
   var doses=[];
-  state.meds.forEach(function(m){if(m.active===false)return;m.times.forEach(function(t){doses.push({m:m,t:t,key:m.id+'|'+t});});});
+  state.meds.forEach(function(m){if(m.active===false)return;m.times.forEach(function(t){var key=m.id+'|'+t;if(m.course&&m.qty<=0&&!log[key])return;doses.push({m:m,t:t,key:key});});});
   doses.sort(function(a,b){return a.t.localeCompare(b.t)||a.m.name.localeCompare(b.m.name);});
   var taken=doses.filter(function(d){return log[d.key];}).length;
   var pct=doses.length?Math.round(taken/doses.length*100):0;
@@ -261,10 +264,10 @@ function viewToday(){
   if(!storageOk&&!cloud.doc)h+='<div class="alert warn" style="margin-bottom:10px">Saving is not available in this view. Your changes will be lost when you leave. Copy your data from Backup first.</div>';
   var hasEx=state.meds.some(function(m){return m.example;});
   if(hasEx)h+='<div class="alert info" style="margin-bottom:10px"><span>These are <b>example</b> medications.</span><button data-act="rm-examples">Remove</button></div>';
-  if(state.meds.length&&!cloud.doc&&(!state.lastBackup||Date.now()-state.lastBackup>14*864e5))h+='<div class="alert warn" style="margin-bottom:10px"><span>'+(state.lastBackup?'Your last backup file is over 2 weeks old.':'You have not saved a backup file yet.')+'</span><button data-tab="backup">Back up</button></div>';
+  if(!DEMO&&state.meds.length&&!cloud.doc&&(!state.lastBackup||Date.now()-state.lastBackup>14*864e5))h+='<div class="alert warn" style="margin-bottom:10px"><span>'+(state.lastBackup?'Your last backup file is over 2 weeks old.':'You have not saved a backup file yet.')+'</span><button data-tab="backup">Back up</button></div>';
   h+='<div class="card summary"><div class="big num">'+taken+' of '+doses.length+' '+plural(doses.length,'dose')+' taken</div>'+
      '<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct+'"><i style="width:'+pct+'%"></i></div></div>';
-  var low=state.meds.filter(function(m){var st=supplyStatus(m);return st!=='good'&&st!=='spare';});
+  var low=state.meds.filter(function(m){var st=supplyStatus(m);return st!=='good'&&st!=='spare'&&st!=='course';});
   if(low.length){
     h+='<h2>Supply</h2><div class="stack">';
     low.forEach(function(m){
@@ -320,7 +323,7 @@ function viewMeds(){
   h+='<div class="stack" style="margin-top:14px">';
   state.meds.forEach(function(m){
     var s=supplyStatus(m),d=daysLeft(m),pct=Math.max(0,Math.min(100,Math.round(m.qty/m.fillQty*100)));
-    var chip=s==='spare'?'<span class="chip ex">Spare</span>':s==='out'?'<span class="chip out">Out</span>':(s==='good'?'<span class="chip good num">'+d+' days left</span>':'<span class="chip low num">'+d+' '+plural(d,'day')+' left</span>');
+    var chip=s==='spare'?'<span class="chip ex">Spare</span>':s==='course'?(m.qty>0?'<span class="chip ex num">'+d+' '+plural(d,'day')+' of course left</span>':'<span class="chip good">Finished</span>'):s==='out'?'<span class="chip out">Out</span>':(s==='good'?'<span class="chip good num">'+d+' days left</span>':'<span class="chip low num">'+d+' '+plural(d,'day')+' left</span>');
     h+='<div class="card med"><div class="top"><div class="grow"><div class="nm">'+esc(m.name)+(m.strength?' <span class="muted" style="font-weight:600">'+esc(m.strength)+'</span>':'')+'</div>'+
        (m.directions?'<div class="small muted">'+esc(m.directions)+'</div>':'')+'</div>'+
        (m.example?'<span class="chip ex">Example</span>':'')+chip+'</div>'+
@@ -356,13 +359,14 @@ function viewBackup(){
     '<div class="small muted">To restore, paste what you copied. A title or other words around it are fine.</div>'+
     '<textarea id="import" class="mono" rows="4" placeholder="Paste here" aria-label="Paste data to restore"></textarea>'+
     '<button class="btn block" data-act="import">Restore from pasted text</button></div></details>'+
+    (DEMO?'<h2>Sample data</h2><div class="card stack"><button class="btn block" data-act="demo-reset">Reset the sample data</button></div>':'')+
     '<h2>Reset</h2><div class="card stack">'+
     '<button class="btn danger block" data-act="clear">'+(confirmKey==='clear'?'Tap again to erase everything':'Erase all data')+'</button></div>'+
     '<p class="foot">RxKeep records what your prescription label says. It does not give medical advice. Ask your pharmacist or prescriber about doses and interactions.</p>';
 }
 
 /* ---------- sheet (add / edit) ---------- */
-function blank(){return {id:'',name:'',strength:'',unit:'tablet',perDose:1,times:['08:00'],qty:30,fillQty:30,refills:0,pharmacy:'',prescriber:'',directions:'',notes:'',active:true,example:false};}
+function blank(){return {id:'',name:'',strength:'',unit:'tablet',perDose:1,times:['08:00'],qty:30,fillQty:30,refills:0,pharmacy:'',prescriber:'',directions:'',notes:'',active:true,course:false,example:false};}
 function openSheet(id){
   var m=id?state.meds.filter(function(x){return x.id===id;})[0]:null;
   editing=m?JSON.parse(JSON.stringify(m)):blank();
@@ -386,6 +390,7 @@ function renderSheet(){
    '<div id="form-err" class="err" hidden></div>'+
    '<div class="field'+fl('name')+'"><label for="f-name">Medication name</label><input id="f-name" value="'+esc(e.name)+'" autocomplete="off"></div>'+
    '<label class="checkrow" for="f-active"><input type="checkbox" id="f-active"'+(e.active===false?'':' checked')+'><span><b>Taking daily from this bottle</b><br><span class="small muted">Turn off for a spare. Spares stay in your inventory but are not scheduled.</span></span></label>'+
+   '<label class="checkrow" for="f-course"><input type="checkbox" id="f-course"'+(e.course?' checked':'')+'><span><b>Short course</b><br><span class="small muted">For a limited course, like an antibiotic. No refill warnings, and it finishes when the pills run out.</span></span></label>'+
    '<div class="two"><div class="field'+fl('strength')+'"><label for="f-strength">Strength</label><input id="f-strength" value="'+esc(e.strength)+'" placeholder="10 mg" autocomplete="off"></div>'+
    '<div class="field'+fl('unit')+'"><label for="f-unit">Form</label><select id="f-unit">'+['tablet','capsule','mL','drop','patch','puff','unit'].map(function(u){return '<option'+(u===e.unit?' selected':'')+'>'+u+'</option>';}).join('')+'</select></div></div>'+
    '<div class="field'+fl('perDose')+'"><label for="f-per">Amount per dose</label><input id="f-per" type="number" inputmode="decimal" step="0.25" min="0.25" value="'+e.perDose+'"></div>'+
@@ -404,7 +409,7 @@ function renderSheet(){
 }
 function readForm(){
   var g=function(id){return document.getElementById(id).value;};
-  editing.name=g('f-name').trim();editing.active=document.getElementById('f-active').checked;editing.strength=g('f-strength').trim();editing.unit=g('f-unit');
+  editing.name=g('f-name').trim();editing.active=document.getElementById('f-active').checked;editing.course=document.getElementById('f-course').checked;editing.strength=g('f-strength').trim();editing.unit=g('f-unit');
   editing.perDose=parseFloat(g('f-per'));editing.qty=parseFloat(g('f-qty'));editing.fillQty=parseFloat(g('f-fill'));
   editing.refills=parseInt(g('f-ref'),10);editing.pharmacy=g('f-ph').trim();editing.prescriber=g('f-doc').trim();
   editing.directions=g('f-dir').trim();editing.notes=g('f-notes').trim();
@@ -430,7 +435,7 @@ function saveMed(){
 function render(){
   document.getElementById('today-label').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'});
   var v=document.getElementById('view');
-  v.innerHTML=booting?'<div class="empty">Loading your medications...</div>':(tab==='today'?viewToday():(tab==='meds'?viewMeds():viewBackup()));
+  v.innerHTML=booting?'<div class="empty">Loading your medications...</div>':(demoBanner()+(tab==='today'?viewToday():(tab==='meds'?viewMeds():viewBackup())));
   Array.prototype.forEach.call(document.querySelectorAll('nav button'),function(b){
     if(b.dataset.tab===tab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');
   });
@@ -448,6 +453,9 @@ document.addEventListener('click',function(ev){
   else if(a==='add')openSheet(null);
   else if(a==='edit')openSheet(t.dataset.id);
   else if(a==='refill')refilled(t.dataset.id);
+  else if(a==='demo-own')askOwn();
+  else if(a==='demo-own-confirm'){try{localStorage.removeItem(KEY);}catch(e){}location.href=location.pathname;}
+  else if(a==='demo-reset'){loadDemoFile().then(function(o){state=o;save();flash='Sample data reset.';render();}).catch(function(){showNotice('Could not reset','The sample data could not be loaded. Check your connection and try again.');});}
   else if(a==='toggle-active'){var tm=state.meds.filter(function(x){return x.id===t.dataset.id;})[0];if(tm){tm.active=(tm.active===false);save();render();}}
   else if(a==='import-photos')document.getElementById('photo-input').click();
   else if(a==='cancel-read'){if(photo.ctl)photo.ctl.abort();}
@@ -592,7 +600,7 @@ document.getElementById('photo-input').addEventListener('change',function(ev){
 /* ---------- saving to the viewer's own Claude account (private, falls back to this browser) ---------- */
 function finishBoot(){if(booting){booting=false;render();}}
 async function initCloud(){
-  if(!booting)return;
+  if(!booting||!(window.claude&&window.claude.use))return;
   var timer=setTimeout(finishBoot,10000);
   try{
     var u=await window.claude.use('user'),db=await window.claude.use('db');
@@ -683,6 +691,33 @@ document.addEventListener('toggle',function(ev){
   if(ev.target&&ev.target.tagName==='DETAILS')pasteOpen=ev.target.open;
 },true);
 
+/* ---------- demo link: ?demo=1 loads made-up sample data into its own storage ---------- */
+async function loadDemoFile(){
+  var r=await fetch('demo.json',{cache:'no-store'});
+  if(!r.ok)throw new Error('x');
+  var o=await r.json();
+  if(!o||!Array.isArray(o.meds))throw new Error('x');
+  return normalize(o);
+}
+async function initDemo(){
+  if(!DEMO||!booting)return;
+  try{state=await loadDemoFile();save();}catch(e){demoFailed=true;}
+  booting=false;render();
+}
+function demoBanner(){
+  if(!DEMO)return '';
+  if(demoFailed)return '<div class="alert warn" style="margin-top:14px"><span>The sample data could not be loaded. Check your connection and reload.</span></div>';
+  return '<div class="alert info" style="margin-top:14px"><span><b>Sample data.</b> Made-up medications, not medical advice. Try tapping a dose.</span><button data-act="demo-own">Start my own list</button></div>';
+}
+function askOwn(){
+  document.getElementById('sheet-host').innerHTML=
+    '<div class="overlay" data-act="overlay"><div class="panel" role="dialog" aria-modal="true" aria-label="Start your own list">'+
+    '<h2 class="t">Start your own list?</h2>'+
+    '<p>This removes the sample data and opens RxKeep with your own list, which starts empty. Anything you add stays in this browser on this device.</p>'+
+    '<div class="btns" style="flex-wrap:wrap"><button class="btn primary" data-act="demo-own-confirm" style="flex:1">Start my own list</button>'+
+    '<button class="btn" data-act="cancel" style="flex:1">Cancel</button></div></div></div>';
+}
+
 /* ---------- start ---------- */
 try{localStorage.setItem(KEY+'.t','1');localStorage.removeItem(KEY+'.t');}catch(e){storageOk=false;}
 state=load()||seed();
@@ -690,6 +725,7 @@ render();
 initPhoto();
 initCloud();
 initDownloads();
+initDemo();
 })();
 </script>
 </body>

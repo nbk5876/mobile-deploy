@@ -1,0 +1,46 @@
+{
+  "meds": [
+    {
+      "id": "demo1", "name": "Paxlovid (nirmatrelvir + ritonavir)", "strength": "300 mg + 100 mg",
+      "unit": "tablet", "perDose": 3, "times": ["08:00", "20:00"],
+      "qty": 30, "fillQty": 30, "refills": 0,
+      "pharmacy": "Sample Pharmacy", "prescriber": "Dr. Sample",
+      "directions": "Take 2 nirmatrelvir tablets and 1 ritonavir tablet together, twice daily for 5 days",
+      "notes": "Made-up sample entry. Follow the label on your own prescription.",
+      "active": true, "course": true
+    },
+    {
+      "id": "demo2", "name": "Vitamin D3", "strength": "2000 IU",
+      "unit": "capsule", "perDose": 1, "times": ["08:00"],
+      "qty": 120, "fillQty": 120, "refills": 0,
+      "pharmacy": "Sample Pharmacy", "prescriber": "",
+      "directions": "Take 1 capsule daily with breakfast",
+      "notes": "", "active": true
+    },
+    {
+      "id": "demo3", "name": "Sample Tablet", "strength": "10 mg",
+      "unit": "tablet", "perDose": 1, "times": ["08:00", "20:00"],
+      "qty": 5, "fillQty": 60, "refills": 2,
+      "pharmacy": "Sample Pharmacy", "prescriber": "Dr. Sample",
+      "directions": "Take 1 tablet by mouth twice daily",
+      "notes": "Running low on purpose, to show the supply warning.", "active": true
+    },
+    {
+      "id": "demo4", "name": "Sample Capsule", "strength": "250 mg",
+      "unit": "capsule", "perDose": 2, "times": ["12:00"],
+      "qty": 24, "fillQty": 90, "refills": 3,
+      "pharmacy": "Sample Pharmacy", "prescriber": "Dr. Sample",
+      "directions": "Take 2 capsules daily with lunch",
+      "notes": "This bottle is in use.", "active": true
+    },
+    {
+      "id": "demo5", "name": "Sample Capsule", "strength": "250 mg",
+      "unit": "capsule", "perDose": 2, "times": ["12:00"],
+      "qty": 90, "fillQty": 90, "refills": 3,
+      "pharmacy": "Sample Pharmacy 2", "prescriber": "Dr. Sample 2",
+      "directions": "Take 2 capsules daily with lunch",
+      "notes": "A second bottle of the same medication, kept as a spare.", "active": false
+    }
+  ],
+  "log": {}
+}
