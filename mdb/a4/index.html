@@ -142,6 +142,7 @@ textarea{min-height:80px;resize:vertical}
 <main class="wrap" id="view" aria-live="polite"></main>
 <div id="sheet-host"></div>
 <input type="file" id="photo-input" class="vh" accept="image/*" multiple tabindex="-1" aria-hidden="true">
+<input type="file" id="backup-input" class="vh" accept=".json,.txt,application/json,text/plain" tabindex="-1" aria-hidden="true">
 <nav aria-label="Sections"><div class="in">
   <button data-tab="today" aria-label="Today">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Today</button>
@@ -257,6 +258,7 @@ function viewToday(){
   if(!storageOk&&!cloud.doc)h+='<div class="alert warn" style="margin-bottom:10px">Saving is not available in this view. Your changes will be lost when you leave. Copy your data from Backup first.</div>';
   var hasEx=state.meds.some(function(m){return m.example;});
   if(hasEx)h+='<div class="alert info" style="margin-bottom:10px"><span>These are <b>example</b> medications.</span><button data-act="rm-examples">Remove</button></div>';
+  if(state.meds.length&&!cloud.doc&&(!state.lastBackup||Date.now()-state.lastBackup>14*864e5))h+='<div class="alert warn" style="margin-bottom:10px"><span>'+(state.lastBackup?'Your last backup file is over 2 weeks old.':'You have not saved a backup file yet.')+'</span><button data-tab="backup">Back up</button></div>';
   h+='<div class="card summary"><div class="big num">'+taken+' of '+doses.length+' '+plural(doses.length,'dose')+' taken</div>'+
      '<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct+'"><i style="width:'+pct+'%"></i></div></div>';
   var low=state.meds.filter(function(m){return supplyStatus(m)!=='good';});
@@ -315,17 +317,23 @@ function viewMeds(){
   return h;
 }
 
+function fmtDate(ts){return new Date(ts).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});}
 function viewBackup(){
   var json=JSON.stringify(state);
-  return '<h2>Back up</h2><div class="card stack">'+
-    '<div class="small muted">Your data lives only in this browser on this phone. Copy it somewhere safe, like a note, so you can restore it later.</div>'+
-    '<textarea id="export" class="mono" readonly rows="5" aria-label="Your data">'+esc(json)+'</textarea>'+
-    '<button class="btn primary block" data-act="copy">Copy my data</button><div id="save-status" class="small muted">'+esc(saveStatusText())+'</div>'+(flash?'<div class="small" style="color:var(--ok);font-weight:600">'+esc(flash)+'</div>':'')+'</div>'+
-    '<h2>Restore</h2><div class="card stack">'+
-    '<div class="small muted">Paste what you copied earlier. A title or other words around it are fine. This replaces everything here.</div>'+
+  var last=state.lastBackup?'Last backup file saved '+fmtDate(state.lastBackup)+'.':'No backup file saved yet.';
+  return (flash?'<div class="alert info" style="margin-top:14px"><span>'+esc(flash)+'</span></div>':'')+
+    '<h2>Backup file</h2><div class="card stack">'+
+    '<div class="small muted">Save your data as a file to keep, email to yourself, or open on another device. Loading a file replaces what is here.</div>'+
+    '<button class="btn primary block" data-act="save-file">Save backup file</button>'+
+    '<button class="btn block" data-act="load-file">Load backup file</button>'+
+    '<div class="small muted num">'+esc(last)+'</div>'+
+    '<div id="save-status" class="small muted">'+esc(saveStatusText())+'</div></div>'+
+    '<h2>Copy and paste</h2><details class="card"'+(pasteOpen?' open':'')+'><summary style="font-weight:700;cursor:pointer;min-height:32px">Copy or paste your data as text</summary><div class="stack" style="margin-top:12px">'+
+    '<textarea id="export" class="mono" readonly rows="4" aria-label="Your data">'+esc(json)+'</textarea>'+
+    '<button class="btn block" data-act="copy">Copy my data</button>'+
+    '<div class="small muted">To restore, paste what you copied. A title or other words around it are fine.</div>'+
     '<textarea id="import" class="mono" rows="4" placeholder="Paste here" aria-label="Paste data to restore"></textarea>'+
-    '<div id="import-err" class="err" hidden></div>'+
-    '<button class="btn block" data-act="import">Restore from pasted data</button></div>'+
+    '<button class="btn block" data-act="import">Restore from pasted text</button></div></details>'+
     '<h2>Reset</h2><div class="card stack">'+
     '<button class="btn danger block" data-act="clear">'+(confirmKey==='clear'?'Tap again to erase everything':'Erase all data')+'</button></div>'+
     '<p class="foot">RxKeep records what your prescription label says. It does not give medical advice. Ask your pharmacist or prescriber about doses and interactions.</p>';
@@ -339,7 +347,7 @@ function openSheet(id){
   editing._new=!m;confirmKey=null;renderSheet();
   var f=document.getElementById('f-name');if(f)f.focus();
 }
-function closeSheet(){editing=null;confirmKey=null;document.getElementById('sheet-host').innerHTML='';}
+function closeSheet(){editing=null;confirmKey=null;pendingRestore=null;document.getElementById('sheet-host').innerHTML='';}
 function timesHtml(){
   return editing.times.map(function(t,i){
     return '<div class="tr"><input type="time" value="'+esc(t)+'" data-time="'+i+'" aria-label="Dose time '+(i+1)+'">'+
@@ -433,15 +441,12 @@ document.addEventListener('click',function(ev){
     var fallback=function(){ta.focus();ta.select();try{document.execCommand('copy');done();}catch(e){flash='Select the text above and copy it.';render();}};
     try{navigator.clipboard.writeText(ta.value).then(done,fallback);}catch(e){fallback();}
   }
-  else if(a==='import'){
-    var raw=document.getElementById('import').value.trim(),box=document.getElementById('import-err');
-    try{
-      var i0=raw.indexOf('{'),i1=raw.lastIndexOf('}');
-      if(i0<0||i1<i0)throw new Error('x');
-      var s=JSON.parse(raw.slice(i0,i1+1));
-      if(!s||!Array.isArray(s.meds))throw new Error('x');
-      state=normalize(s);save();flash='Restored.';render();
-    }catch(e){box.textContent='That is not RxKeep data. Copy it again from Backup on the other device and paste all of it.';box.hidden=false;}
+  else if(a==='import')askRestore(document.getElementById('import').value,'The pasted text');
+  else if(a==='save-file')saveFile();
+  else if(a==='load-file')document.getElementById('backup-input').click();
+  else if(a==='restore-confirm'){
+    var ps=pendingRestore;
+    if(ps){state=normalize(ps);save();closeSheet();flash='Restored '+state.meds.length+' '+plural(state.meds.length,'medication')+'.';render();}
   }
 });
 document.addEventListener('change',function(ev){
@@ -584,12 +589,81 @@ async function initCloud(){
   if(booting)finishBoot();else if(!editing)render();
 }
 
+/* ---------- backup files: save with a file name, load with a file picker ---------- */
+var pasteOpen=false,pendingRestore=null,dl={api:null};
+async function initDownloads(){
+  try{if(window.claude&&window.claude.use)dl.api=await window.claude.use('downloads');}catch(e){}
+}
+function backupName(){return 'RxKeep-backup-'+dayKey()+'.json';}
+async function saveFile(){
+  var prev=state.lastBackup;state.lastBackup=Date.now();
+  var text=JSON.stringify(state,null,2),name=backupName(),how='';
+  var cancelled=function(e){return e&&(e.name==='AbortError'||e.code==='declined');};
+  if(dl.api){
+    try{await dl.api.save({filename:name,data:text});how='saved';}
+    catch(e){if(cancelled(e)){state.lastBackup=prev;return;}}
+  }
+  if(!how&&window.showSaveFilePicker){
+    try{
+      var h=await window.showSaveFilePicker({suggestedName:name,types:[{description:'RxKeep backup',accept:{'application/json':['.json']}}]});
+      var w=await h.createWritable();await w.write(text);await w.close();how='saved';
+    }catch(e){if(cancelled(e)){state.lastBackup=prev;return;}}
+  }
+  if(!how){
+    try{
+      var url=URL.createObjectURL(new Blob([text],{type:'application/json'}));
+      var a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+      setTimeout(function(){URL.revokeObjectURL(url);},5000);how='downloaded';
+    }catch(e){}
+  }
+  if(how){
+    save();
+    flash=how==='saved'?'Backup file saved. Keep it somewhere safe.':'Backup file downloaded as '+name+'. Look in your Downloads folder (on iPhone, the Files app).';
+    render();
+  }else{
+    state.lastBackup=prev;pasteOpen=true;
+    showNotice('Could not save the file','This view blocks file saving. Use the copy and paste option on the Backup tab instead.');
+  }
+}
+function parseBackup(raw){
+  raw=String(raw||'');
+  var i0=raw.indexOf('{'),i1=raw.lastIndexOf('}');
+  if(i0<0||i1<i0)return null;
+  try{var o=JSON.parse(raw.slice(i0,i1+1));return o&&Array.isArray(o.meds)?o:null;}catch(e){return null;}
+}
+function askRestore(raw,label){
+  var o=parseBackup(raw);
+  if(!o){showNotice('That is not an RxKeep backup','Choose the file you saved from the Backup tab, or paste all of the text you copied.');return;}
+  pendingRestore=o;
+  var n=o.meds.length;
+  var names=o.meds.slice(0,15).map(function(m){return String(m&&m.name||'Unnamed');}).join(', ');
+  document.getElementById('sheet-host').innerHTML=
+    '<div class="overlay" data-act="overlay"><div class="panel" role="dialog" aria-modal="true" aria-label="Replace your data">'+
+    '<h2 class="t">Replace your data?</h2>'+
+    '<p>'+esc(label)+' has '+n+' '+plural(n,'medication')+(n?': '+esc(names)+(n>15?', and more':''):'')+'.</p>'+
+    '<p>This replaces the '+state.meds.length+' '+plural(state.meds.length,'medication')+' you have here now.</p>'+
+    '<div class="btns" style="flex-wrap:wrap"><button class="btn primary" data-act="restore-confirm" style="flex:1">Replace my data</button>'+
+    '<button class="btn" data-act="cancel" style="flex:1">Cancel</button></div></div></div>';
+}
+document.getElementById('backup-input').addEventListener('change',async function(ev){
+  var f=ev.target.files&&ev.target.files[0];
+  ev.target.value='';
+  if(!f)return;
+  var raw='';
+  try{raw=await f.text();}catch(e){}
+  askRestore(raw,'The file '+f.name);
+});
+document.addEventListener('toggle',function(ev){
+  if(ev.target&&ev.target.tagName==='DETAILS')pasteOpen=ev.target.open;
+},true);
+
 /* ---------- start ---------- */
 try{localStorage.setItem(KEY+'.t','1');localStorage.removeItem(KEY+'.t');}catch(e){storageOk=false;}
 state=load()||seed();
 render();
 initPhoto();
 initCloud();
+initDownloads();
 })();
 </script>
 </body>
