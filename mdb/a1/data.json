@@ -1,6 +1,6 @@
 {
   "title": "App 1",
-  "message": "Deploy test v4: Joleen photo added, Nov 16, 2026.",
+  "message": "Deploy test v5: Nov 17, 2026.",
   "items": [
     "Built in Claude chat",
     "Stored in GitHub",
@@ -49,10 +49,5 @@
       "image": "weekly/sat.jpg",
       "alt": "I've been thinking. You need more supervision"
     }
-  ],
-  "featured": {
-    "name": "Joleen",
-    "image": "joleen.jpg",
-    "alt": "Portrait of Joleen"
-  }
+  ]
 }

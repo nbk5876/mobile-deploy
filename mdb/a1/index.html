@@ -13,9 +13,8 @@
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <link rel="apple-touch-icon" href="https://www.core3.com/mdb/a1/joleen.jpg">
   <title>App 1</title>
-  <link rel="stylesheet" href="style.css?v=6">
+  <link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
   <img class="banner" src="banner.svg" alt="Coffee cups on a café table">
@@ -24,10 +23,6 @@
   </header>
   <main>
     <div class="card">
-    <section class="featured" id="featured" aria-label="Featured" hidden>
-      <img id="featimg" alt="">
-      <h2 id="featname"></h2>
-    </section>
     <section class="motw" aria-label="Message of the day">
       <h2>Message of the day</h2>
       <img id="motw" alt="" style="display:block;width:100%;max-width:100%;height:auto">
@@ -49,13 +44,6 @@
         document.getElementById('message').textContent = d.message;
         // Always start on the first image. Add ?start=N to begin on image N instead.
         const q = parseInt(new URLSearchParams(location.search).get('start'), 10);
-        if (d.featured) {
-          const f = d.featured;
-          document.getElementById('featimg').src = f.image;
-          document.getElementById('featimg').alt = f.alt || f.name;
-          document.getElementById('featname').textContent = f.name;
-          document.getElementById('featured').hidden = false;
-        }
         weekly = d.weekly || [];
         idx = q >= 0 ? q % (weekly.length || 1) : 0;
         if (weekly.length) showPhoto();
