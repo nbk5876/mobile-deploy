@@ -2,17 +2,57 @@
   "title": "iPhone Video to YouTube Short",
   "subtitle": "A 12-step guide with screenshots, from the Photos app to a finished Short.",
   "steps": [
-    {"title": "Share the video to YouTube", "text": "Open the video in Photos and tap the Share button. In the top row of apps, tap YouTube. Make sure the sheet says \"1 Video Selected\" with the length you expect."},
-    {"title": "Wait for \"Preparing...\"", "text": "iOS gets the video ready for YouTube. Longer videos take a bit more time. Tap Cancel only if you picked the wrong video."},
-    {"title": "Choose the part to keep", "text": "Drag the handles at the ends of the strip to trim the video. The number in the middle shows the length you kept (77.3s here). Tap Next."},
-    {"title": "Optional edits, then Next", "text": "You can add sound, text, effects, filters, stickers, captions or a voiceover, or tap Edit for more. To skip all that, just tap Next."},
-    {"title": "Add details", "text": "Type a caption in the top box. Here the caption is the title of the Short. Notice that Visibility starts as Unlisted, which means only people with the link can see it."},
-    {"title": "Tap Show more", "text": "This reveals the extra options: Add description, Location, Related video and Add to playlists."},
-    {"title": "Select audience", "text": "YouTube requires you to say whether the video is made for kids. For this video the answer was \"No, it's not made for kids\". Tap the back arrow when done."},
-    {"title": "Add to a playlist (optional)", "text": "Tap Add to playlists, check the playlist you want, then tap Done. The lock, link and globe icons show each playlist's privacy."},
-    {"title": "Review and tap Upload Short", "text": "Check the caption, Visibility, Audience and Playlist. When it all looks right, tap the black Upload Short button."},
-    {"title": "Watch the upload", "text": "You land on your channel's Shorts tab. The new Short shows an upload arrow while it uploads. Keep the app open until it finishes."},
-    {"title": "Upload finished", "text": "The Short now has an Unlisted label and \"No views\". If a thumbnail looks blank for a moment, it is still processing."},
-    {"title": "Play your Short", "text": "Tap the Short to watch it. You will see your caption, the Unlisted label, and the Share button for sending the link to others."}
-  ]
+    {
+      "title": "Share the video to YouTube",
+      "text": "Open the video in Photos and tap the Share button. In the top row of apps, tap YouTube. Make sure the sheet says \"1 Video Selected\" with the length you expect."
+    },
+    {
+      "title": "Wait for \"Preparing...\"",
+      "text": "iOS gets the video ready for YouTube. Longer videos take a bit more time. Tap Cancel only if you picked the wrong video."
+    },
+    {
+      "title": "Choose the part to keep",
+      "text": "Drag the handles at the ends of the strip to trim the video. The number in the middle shows the length you kept (77.3s here). Tap Next."
+    },
+    {
+      "title": "Optional edits, then Next",
+      "text": "You can add sound, text, effects, filters, stickers, captions or a voiceover, or tap Edit for more. To skip all that, just tap Next."
+    },
+    {
+      "title": "Add details",
+      "text": "Type a caption in the top box. Here the caption is the title of the Short. Notice that Visibility starts as Unlisted, which means only people with the link can see it."
+    },
+    {
+      "title": "Tap Show more",
+      "text": "This reveals the extra options: Add description, Location, Related video and Add to playlists."
+    },
+    {
+      "title": "Select audience",
+      "text": "YouTube requires you to say whether the video is made for kids. For this video the answer was \"No, it's not made for kids\". Tap the back arrow when done."
+    },
+    {
+      "title": "Add to a playlist (optional)",
+      "text": "Tap Add to playlists, check the playlist you want, then tap Done. The lock, link and globe icons show each playlist's privacy."
+    },
+    {
+      "title": "Review and tap Upload Short",
+      "text": "Check the caption, Visibility, Audience and Playlist. When it all looks right, tap the black Upload Short button."
+    },
+    {
+      "title": "Watch the upload",
+      "text": "You land on your channel's Shorts tab. The new Short shows an upload arrow while it uploads. Keep the app open until it finishes."
+    },
+    {
+      "title": "Upload finished",
+      "text": "The Short now has an Unlisted label and \"No views\". If a thumbnail looks blank for a moment, it is still processing."
+    },
+    {
+      "title": "Play your Short",
+      "text": "Tap the Short to watch it. You will see your caption, the Unlisted label, and the Share button for sending the link to others."
+    }
+  ],
+  "note": {
+    "title": "Before you start",
+    "text": "You need a YouTube account to upload. If you don't have one yet, create it first: install the YouTube app (or go to youtube.com), tap Sign in, and use or create a Google account. Then come back and start at step 1. This guide also assumes the YouTube app is installed on your iPhone."
+  }
 }
