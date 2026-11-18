@@ -58,11 +58,11 @@ Prescriptions pile up. There are several bottles, some from different doctors an
 - **Backup files.** Save your data to a file and load it again, with a confirmation before anything is replaced. This is how you move data between devices, since each browser keeps its own copy.
 - **Demo link.** Adding `?demo=1` to the address opens a copy filled with made-up sample data, kept separate from real data, so it can be shown to a friend safely.
 - **Link previews and Home Screen icon.** Pasting the link into a text message shows a title and picture, and it can be added to the iPhone Home Screen like an app.
-- **Drug descriptions (planned).** A page with a short plain-language summary of what each medication is generally used for, with each drug name in the app linking to it, plus a personal "why I take it" note.
+- **Drug information.** An Info tab gives a short plain-language summary of what each of your medications is generally used for, taken from MedlinePlus (U.S. National Library of Medicine), with a link to the full page. Tapping a drug name on Meds, or the small "i" beside it on Today, jumps straight to its entry, with a Back button. Each entry also has a note box, "why I take it", for your own reason in your own words. Notes are included in backup files. Bottles of the same drug share one entry. The summaries are general information, not medical advice, and a drug with no summary yet shows a placeholder.
 
 ### How your data is stored
 
-Data stays on your device, in the browser. Nothing is sent to Core3. Safari, Chrome, the Home Screen copy and the Claude preview each keep their own separate copy, so use the backup file to move data between them. These apps give general information only and are not medical advice.
+Data stays on your device, in the browser. The drug summaries are built into the app itself, so they work offline and nothing is looked up when you use it. Nothing is sent to Core3. Safari, Chrome, the Home Screen copy and the Claude preview each keep their own separate copy, so use the backup file to move data between them. These apps give general information only and are not medical advice.
 
 ## Deploy
 
